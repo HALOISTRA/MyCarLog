@@ -255,7 +255,7 @@ export function VehicleForm({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="gap-2 bg-slate-800 text-white border-slate-800 hover:bg-slate-700 hover:border-slate-700"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-4 w-4" />
@@ -548,6 +548,7 @@ export function VehicleForm({
           variant="outline"
           onClick={() => router.back()}
           disabled={isSubmitting}
+          className="bg-slate-800 text-white border-slate-800 hover:bg-slate-700 hover:border-slate-700"
         >
           Cancel
         </Button>
