@@ -1,0 +1,509 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     DateTime?
+  passwordHash      String?
+  name              String?
+  avatarUrl         String?
+  locale            String    @default("en")
+  timezone          String    @default("UTC")
+  role              UserRole  @default(USER)
+  notificationPrefs Json      @default("{\"email\":true,\"inApp\":true,\"leadDays\":[30,14,7]}")
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  accounts           Account[]
+  sessions           Session[]
+  vehicles           Vehicle[]
+  maintenanceRecords MaintenanceRecord[]
+  uploadedDocuments  VehicleDocument[]
+  shareLinks         ShareLink[]
+  transfersFrom      OwnershipTransfer[]           @relation("TransferFrom")
+  transfersTo        OwnershipTransfer[]           @relation("TransferTo")
+  notificationLogs   NotificationLog[]
+  auditLogs          AuditLog[]
+  planAssignments    VehiclePlanAssignment[]
+  sourceDocuments    MaintenancePlanSourceDocument[]
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
+// ─── VEHICLE ─────────────────────────────────────────────────────────────────
+
+model Vehicle {
+  id              String           @id @default(cuid())
+  ownerId         String
+  make            String
+  model           String
+  trim            String?
+  generation      String?
+  year            Int
+  vin             String?
+  plate           String?
+  engine          String?
+  engineCode      String?
+  fuelType        FuelType         @default(PETROL)
+  transmission    TransmissionType @default(MANUAL)
+  drivetrain      DrivetrainType   @default(FWD)
+  bodyType        String?
+  color           String?
+  marketRegion    String?
+  currentMileage  Int              @default(0)
+  mileageUnit     MileageUnit      @default(KM)
+  purchaseDate    DateTime?
+  purchaseMileage Int?
+  nickname        String?
+  notes           String?          @db.Text
+  imageUrl        String?
+  imageKey        String?
+  archivedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  owner              User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  documents          VehicleDocument[]
+  maintenanceRecords MaintenanceRecord[]
+  reminders          Reminder[]
+  shareLinks         ShareLink[]
+  transfers          OwnershipTransfer[]
+  planAssignments    VehiclePlanAssignment[]
+  notificationLogs   NotificationLog[]
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+  PLUGIN_HYBRID
+  LPG
+  CNG
+  HYDROGEN
+  OTHER
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATIC
+  CVT
+  DCT
+  OTHER
+}
+
+enum DrivetrainType {
+  FWD
+  RWD
+  AWD
+  FOUR_WD
+}
+
+enum MileageUnit {
+  KM
+  MI
+}
+
+// ─── DOCUMENTS ───────────────────────────────────────────────────────────────
+
+model VehicleDocument {
+  id                    String           @id @default(cuid())
+  vehicleId             String
+  uploadedByUserId      String
+  category              DocumentCategory
+  title                 String
+  fileUrl               String
+  fileKey               String
+  fileType              String
+  fileSize              Int
+  documentDate          DateTime?
+  visibilitySetting     VisibilityLevel  @default(PRIVATE)
+  includeInShareDefault Boolean          @default(false)
+  sourceType            String           @default("user_upload")
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  vehicle            Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  uploadedBy         User                @relation(fields: [uploadedByUserId], references: [id])
+  maintenanceRecords MaintenanceRecord[] @relation("RecordDocuments")
+}
+
+enum DocumentCategory {
+  REGISTRATION
+  INSURANCE
+  INSPECTION
+  INVOICE
+  SERVICE_BOOK
+  OWNERSHIP
+  WARRANTY
+  PHOTO
+  OTHER
+}
+
+enum VisibilityLevel {
+  PRIVATE
+  SHARED
+  PUBLIC
+}
+
+// ─── MAINTENANCE RECORDS ─────────────────────────────────────────────────────
+
+model MaintenanceRecord {
+  id                   String              @id @default(cuid())
+  vehicleId            String
+  createdByUserId      String
+  performedAt          DateTime
+  mileageAtService     Int?
+  category             MaintenanceCategory
+  title                String
+  description          String?             @db.Text
+  partsUsed            String?             @db.Text
+  laborNotes           String?             @db.Text
+  costAmount           Decimal?            @db.Decimal(10, 2)
+  currency             String?             @default("EUR")
+  workshopName         String?
+  isOfficialPlanDerived Boolean            @default(false)
+  linkedPlanItemId     String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  vehicle        Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdBy      User                 @relation(fields: [createdByUserId], references: [id])
+  linkedPlanItem MaintenancePlanItem? @relation(fields: [linkedPlanItemId], references: [id])
+  documents      VehicleDocument[]    @relation("RecordDocuments")
+}
+
+enum MaintenanceCategory {
+  OIL_CHANGE
+  FILTER_AIR
+  FILTER_CABIN
+  FILTER_FUEL
+  FILTER_OIL
+  BRAKE_FLUID
+  COOLANT
+  SPARK_PLUGS
+  TIMING_BELT
+  TIMING_CHAIN
+  TRANSMISSION_OIL
+  TIRES
+  BATTERY
+  BRAKES
+  SUSPENSION
+  REGISTRATION
+  INSURANCE
+  INSPECTION
+  SEASONAL_SERVICE
+  GENERAL_SERVICE
+  REPAIR
+  CUSTOM
+}
+
+// ─── REMINDERS ───────────────────────────────────────────────────────────────
+
+model Reminder {
+  id               String              @id @default(cuid())
+  vehicleId        String
+  sourceType       ReminderSource      @default(USER_CUSTOM)
+  category         MaintenanceCategory
+  title            String
+  description      String?             @db.Text
+  dueDate          DateTime?
+  dueMileage       Int?
+  recurrenceRule   Json?
+  leadTimeDays     Int                 @default(30)
+  status           ReminderStatus      @default(UPCOMING)
+  lastTriggeredAt  DateTime?
+  completedAt      DateTime?
+  snoozedUntil     DateTime?
+  linkedPlanItemId String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  vehicle          Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  linkedPlanItem   MaintenancePlanItem? @relation(fields: [linkedPlanItemId], references: [id])
+  notificationLogs NotificationLog[]
+}
+
+enum ReminderSource {
+  OFFICIAL_PLAN
+  USER_CUSTOM
+  TRANSFER_IMPORT
+  SYSTEM
+}
+
+enum ReminderStatus {
+  UPCOMING
+  DUE_SOON
+  OVERDUE
+  COMPLETED
+  SNOOZED
+  DISMISSED
+}
+
+// ─── MAINTENANCE PLANS ────────────────────────────────────────────────────────
+
+model MaintenancePlan {
+  id                 String                 @id @default(cuid())
+  make               String
+  model              String
+  trim               String?
+  generation         String?
+  yearFrom           Int?
+  yearTo             Int?
+  engine             String?
+  engineCode         String?
+  fuelType           FuelType?
+  transmission       TransmissionType?
+  marketRegion       String?
+  sourceDocumentId   String?
+  verificationStatus PlanVerificationStatus @default(PENDING)
+  sourceLabel        String?
+  notes              String?                @db.Text
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  sourceDocument     MaintenancePlanSourceDocument? @relation(fields: [sourceDocumentId], references: [id])
+  planItems          MaintenancePlanItem[]
+  vehicleAssignments VehiclePlanAssignment[]
+}
+
+enum PlanVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  NEEDS_REVIEW
+}
+
+model MaintenancePlanItem {
+  id                 String           @id @default(cuid())
+  maintenancePlanId  String
+  category           MaintenanceCategory
+  itemName           String
+  description        String?          @db.Text
+  mileageInterval    Int?
+  timeIntervalMonths Int?
+  ruleType           IntervalRuleType @default(WHICHEVER_FIRST)
+  warningLevel       WarningLevel     @default(NORMAL)
+  sourceReference    String?
+  displayOrder       Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  plan               MaintenancePlan     @relation(fields: [maintenancePlanId], references: [id], onDelete: Cascade)
+  maintenanceRecords MaintenanceRecord[]
+  reminders          Reminder[]
+}
+
+enum IntervalRuleType {
+  TIME_ONLY
+  MILEAGE_ONLY
+  WHICHEVER_FIRST
+  INSPECT_ONLY
+  CONDITIONAL
+}
+
+enum WarningLevel {
+  INFO
+  NORMAL
+  IMPORTANT
+  CRITICAL
+}
+
+model MaintenancePlanSourceDocument {
+  id                 String                 @id @default(cuid())
+  title              String
+  make               String
+  model              String
+  yearRange          String?
+  marketRegion       String?
+  fileUrl            String?
+  fileKey            String?
+  sourceType         String
+  verificationStatus PlanVerificationStatus @default(PENDING)
+  extractionNotes    String?                @db.Text
+  uploadedByUserId   String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  uploadedBy User?             @relation(fields: [uploadedByUserId], references: [id])
+  plans      MaintenancePlan[]
+}
+
+model VehiclePlanAssignment {
+  id                   String               @id @default(cuid())
+  vehicleId            String
+  maintenancePlanId    String
+  assignedByUserId     String
+  assignmentConfidence AssignmentConfidence @default(EXACT)
+  isActive             Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  vehicle    Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  plan       MaintenancePlan @relation(fields: [maintenancePlanId], references: [id])
+  assignedBy User            @relation(fields: [assignedByUserId], references: [id])
+}
+
+enum AssignmentConfidence {
+  EXACT
+  LIKELY
+  MANUAL_REVIEW
+}
+
+// ─── SHARE LINKS ──────────────────────────────────────────────────────────────
+
+model ShareLink {
+  id               String    @id @default(cuid())
+  vehicleId        String
+  createdByUserId  String
+  token            String    @unique
+  pinHash          String?
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  visibilityConfig Json      @default("{\"showMaintenance\":true,\"showDocuments\":false,\"showCosts\":false,\"showVin\":false,\"showPlate\":true,\"showNotes\":false}")
+  label            String?
+  accessCount      Int       @default(0)
+  lastAccessedAt   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdByUserId], references: [id])
+}
+
+// ─── OWNERSHIP TRANSFER ───────────────────────────────────────────────────────
+
+model OwnershipTransfer {
+  id                    String         @id @default(cuid())
+  vehicleId             String
+  fromUserId            String
+  toEmail               String
+  toUserId              String?
+  status                TransferStatus @default(PENDING)
+  expiresAt             DateTime
+  includeDocuments      Boolean        @default(true)
+  includeCosts          Boolean        @default(false)
+  includePrivateNotes   Boolean        @default(false)
+  includeServiceHistory Boolean        @default(true)
+  preserveSellerArchive Boolean        @default(true)
+  message               String?        @db.Text
+  token                 String         @unique
+  acceptedAt            DateTime?
+  cancelledAt           DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  vehicle  Vehicle @relation(fields: [vehicleId], references: [id])
+  fromUser User    @relation("TransferFrom", fields: [fromUserId], references: [id])
+  toUser   User?   @relation("TransferTo", fields: [toUserId], references: [id])
+}
+
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+
+model NotificationLog {
+  id             String              @id @default(cuid())
+  userId         String
+  vehicleId      String?
+  reminderId     String?
+  channel        NotificationChannel
+  status         NotificationStatus  @default(PENDING)
+  sentAt         DateTime?
+  subject        String?
+  payloadSummary String?             @db.Text
+  createdAt      DateTime            @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
+  reminder Reminder? @relation(fields: [reminderId], references: [id])
+}
+
+enum NotificationChannel {
+  EMAIL
+  IN_APP
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// ─── AUDIT LOG ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actionType  String
+  targetType  String
+  targetId    String
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+}
