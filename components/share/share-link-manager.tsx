@@ -32,7 +32,7 @@ import { CreateShareLinkDialog } from "./create-share-link-dialog";
 import { revokeShareLink, deleteShareLink } from "@/app/actions/shares";
 import type { ShareVisibilityConfig } from "@/types";
 
-// Local type mirror — replaced by @/app/generated/prisma after `prisma generate`
+// Local type mirror — replaced by @/generated/prisma after `prisma generate`
 interface ShareLink {
   id: string;
   vehicleId: string;

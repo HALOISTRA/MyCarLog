@@ -6,7 +6,7 @@ import { addDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/session";
 import { createNextRecurringReminder } from "@/lib/reminders/engine";
-import type { MaintenanceCategory, ReminderSource } from "@/app/generated/prisma";
+import type { MaintenanceCategory, ReminderSource } from "@/generated/prisma";
 
 // ─── Zod Schema ───────────────────────────────────────────────────────────────
 

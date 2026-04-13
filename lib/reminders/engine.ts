@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { Reminder, Vehicle } from "@/app/generated/prisma";
+import type { Reminder, Vehicle } from "@/generated/prisma";
 import { addDays, isBefore, isAfter } from "date-fns";
 
 export type ReminderWithStatus = Reminder & {

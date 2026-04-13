@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { deleteMaintenanceRecord } from "@/app/actions/maintenance";
 import { MAINTENANCE_CATEGORY_LABELS } from "@/types";
-import type { MaintenanceRecord } from "@/app/generated/prisma";
+import type { MaintenanceRecord } from "@/generated/prisma";
 
 // ─── Category icon map ────────────────────────────────────────────────────────
 

@@ -8,7 +8,7 @@ const config: Config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
     "^@/lib/db$": "<rootDir>/__mocks__/prismaClient.ts",
-    "^@/app/generated/prisma$": "<rootDir>/__mocks__/prismaClient.ts",
+    "^@/generated/prisma$": "<rootDir>/__mocks__/prismaClient.ts",
   },
   testMatch: ["**/__tests__/**/*.test.ts"],
   extensionsToTreatAsEsm: [],

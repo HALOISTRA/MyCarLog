@@ -25,7 +25,7 @@ import type {
   VehiclePlanAssignment,
   MaintenancePlanItem,
   AssignmentConfidence,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { MAINTENANCE_CATEGORY_LABELS } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

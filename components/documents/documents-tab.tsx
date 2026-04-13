@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { DocumentList } from "./document-list";
 import { DocumentUploadDialog } from "./document-upload-dialog";
 import { DOCUMENT_CATEGORY_LABELS } from "@/types";
-// Local type mirrors — replaced by @/app/generated/prisma after `prisma generate`
+// Local type mirrors — replaced by @/generated/prisma after `prisma generate`
 interface VehicleDocument {
   id: string;
   vehicleId: string;

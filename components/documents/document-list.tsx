@@ -30,7 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteDocument, updateDocument } from "@/app/actions/documents";
 
-// Local type mirror — replaced by @/app/generated/prisma after `prisma generate`
+// Local type mirror — replaced by @/generated/prisma after `prisma generate`
 interface VehicleDocument {
   id: string;
   vehicleId: string;

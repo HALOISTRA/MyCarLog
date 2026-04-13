@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/session";
-import type { MaintenanceCategory } from "@/app/generated/prisma";
+import type { MaintenanceCategory } from "@/generated/prisma";
 
 // ─── Zod Schema ───────────────────────────────────────────────────────────────
 

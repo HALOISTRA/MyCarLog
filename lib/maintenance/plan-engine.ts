@@ -4,7 +4,7 @@ import type {
   MaintenancePlan,
   MaintenancePlanItem,
   MaintenanceRecord,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { addMonths, isBefore } from "date-fns";
 
 export type PlanMatchResult = {
